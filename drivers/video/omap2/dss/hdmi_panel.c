@@ -552,6 +552,12 @@ static int hdmi_set_mode(struct omap_dss_device *dssdev,
 	return ret;
 }
 
+static enum omap_dss_update_mode hdmi_get_update_mode(
+		struct omap_dss_device *dssdev)
+{
+	return OMAP_DSS_UPDATE_MANUAL;
+}
+
 static struct omap_dss_driver hdmi_driver = {
 	.probe		= hdmi_panel_probe,
 	.remove		= hdmi_panel_remove,
@@ -566,6 +572,7 @@ static struct omap_dss_driver hdmi_driver = {
 	.get_fb_resolution = hdmi_get_fb_resolution,
 	.get_modedb	= hdmi_get_modedb,
 	.set_mode	= hdmi_set_mode,
+	.get_update_mode = hdmi_get_update_mode,
 	.driver			= {
 		.name   = "hdmi_panel",
 		.owner  = THIS_MODULE,
