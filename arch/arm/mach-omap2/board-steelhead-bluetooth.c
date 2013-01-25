@@ -100,7 +100,7 @@ int __init steelhead_init_bluetooth(void)
 	omap_mux_init_signal("gpmc_ncs2.gpio_52", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("gpmc_a21.gpio_45", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("gpmc_a23.gpio_47",
-			     OMAP_WAKEUP_EN | OMAP_PIN_INPUT);
+			     OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLDOWN);
 
 	/* Setup the pins used to connect the BCM4330 to McBSP1 */
 	steelhead_init_bluetooth_mcbsp();
