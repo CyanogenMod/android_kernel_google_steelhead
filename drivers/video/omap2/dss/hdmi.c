@@ -375,7 +375,11 @@ void hdmi_get_monspecs(struct fb_monspecs *specs)
 	 * than a DTD first entry), we select the initial
 	 * vmode in a second pass through the list.
 	 */
-	if (default_code) {
+	if (preferred_vmode) {
+		pr_info("initial_vmode set to cea_mode[%d]\n",
+			preferred_vmode);
+		hdmi.initial_vmode = specs->modedb[preferred_vmode];
+	} else if (default_code) {
 		for (i = 0; i < specs->modedb_len; i++) {
 			/* check if we can use this mode as the initial one */
 			if ((specs->modedb[i].flag & FB_FLAG_HW_CAPABLE) &&

@@ -288,6 +288,8 @@ struct hdcp {
 	int hdcp_up_event;
 	int hdcp_down_event;
 	bool hdcp_keys_loaded;
+	unsigned int auto_ri_check_disabled;
+	bool auto_ri_check_req;
 };
 
 extern struct hdcp hdcp;
@@ -344,6 +346,8 @@ int hdcp_lib_step1_start(void);
 int hdcp_lib_step1_r0_check(void);
 int hdcp_lib_step2(void);
 int hdcp_lib_irq(void);
+void hdcp_lib_auto_ri_check_disable_lock(void);
+void hdcp_lib_auto_ri_check_disable_unlock(void);
 void hdcp_lib_auto_ri_check(bool state);
 void hdcp_lib_auto_bcaps_rdy_check(bool state);
 void hdcp_lib_set_av_mute(enum av_mute av_mute_state);

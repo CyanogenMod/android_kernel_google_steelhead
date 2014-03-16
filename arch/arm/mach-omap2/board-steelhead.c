@@ -1014,26 +1014,22 @@ static int __init steelhead_i2c_init(void)
 
 static void omap4_steelhead_hdmi_mux_init(void)
 {
+	u32 reg;
 	int err;
 
 	/* PAD0_HDMI_HPD_PAD1_HDMI_CEC */
 	omap_mux_init_signal("hdmi_cec.hdmi_cec",
 			OMAP_PIN_INPUT_PULLUP);
-	/* PAD0_HDMI_DDC_SCL_PAD1_HDMI_DDC_SDA - TPD12S015A has
-	 * internal pullups
-	 */
+
+	/* PAD0_HDMI_DDC_SCL_PAD1_HDMI_DDC_SDA */
 	omap_mux_init_signal("hdmi_ddc_scl.hdmi_ddc_scl",
 			OMAP_PIN_INPUT);
 	omap_mux_init_signal("hdmi_ddc_sda.hdmi_ddc_sda",
 			OMAP_PIN_INPUT);
 
-#if 0 /* tuna has these but I believe we don't need it because
-       * the TPD12S015A has internal pullups on the SDA/SCL lines
-       */
-	/* strong pullup on DDC lines using unpublished register */
-	r = ((1 << 24) | (1 << 28)) ;
-	omap4_ctrl_pad_writel(r, OMAP4_CTRL_MODULE_PAD_CORE_CONTROL_I2C_1);
-#endif
+	reg = omap4_ctrl_pad_readl(OMAP4_CTRL_MODULE_PAD_CORE_CONTROL_I2C_1);
+	reg |= (OMAP4_HDMI_DDC_SDA_PULLUPRESX_MASK | OMAP4_HDMI_DDC_SCL_PULLUPRESX_MASK);
+	omap4_ctrl_pad_writel(reg, OMAP4_CTRL_MODULE_PAD_CORE_CONTROL_I2C_1);
 
 	/* do gpio setup of HDMI_HPD.  the hdmi driver uses gpio
 	 * interrupt to detect hot plug and notify Android userland

@@ -565,18 +565,12 @@ u8 hdcp_lib_check_repeater_bit_in_tx(void)
 }
 
 /*-----------------------------------------------------------------------------
- * Function: hdcp_lib_auto_ri_check
+ * Function: hdcp_lib_auto_ri_check_locked
  *-----------------------------------------------------------------------------
  */
-void hdcp_lib_auto_ri_check(bool state)
+static void hdcp_lib_auto_ri_check_locked(bool state)
 {
 	u8 reg_val;
-	unsigned long flags;
-
-	DBG("hdcp_lib_auto_ri_check() state=%s",
-		state == true ? "ON" : "OFF");
-
-	spin_lock_irqsave(&hdcp.spinlock, flags);
 
 	reg_val = RD_REG_32(hdcp.hdmi_wp_base_addr + HDMI_IP_CORE_SYSTEM,
 			    HDMI_IP_CORE_SYSTEM__INT_UNMASK3);
@@ -595,9 +589,82 @@ void hdcp_lib_auto_ri_check(bool state)
 	/* Read to flush */
 	RD_REG_32(hdcp.hdmi_wp_base_addr + HDMI_IP_CORE_SYSTEM,
 		    HDMI_IP_CORE_SYSTEM__RI_CMD);
+}
+
+/*-----------------------------------------------------------------------------
+ * Function: hdcp_lib_auto_ri_check_locked
+ *-----------------------------------------------------------------------------
+ */
+void hdcp_lib_auto_ri_check(bool state)
+{
+	unsigned long flags;
+
+	DBG("hdcp_lib_auto_ri_check() state=%s",
+		state == true ? "ON" : "OFF");
+
+	spin_lock_irqsave(&hdcp.spinlock, flags);
+
+	hdcp.auto_ri_check_req = state;
+
+	if (!hdcp.auto_ri_check_disabled)
+		hdcp_lib_auto_ri_check_locked(state);
 
 	spin_unlock_irqrestore(&hdcp.spinlock, flags);
 }
+
+/*-----------------------------------------------------------------------------
+ * Function: hdcp_lib_auto_ri_check_disable_lock
+ *-----------------------------------------------------------------------------
+ */
+void hdcp_lib_auto_ri_check_disable_lock(void)
+{
+	unsigned long flags;
+	unsigned int TimeOut = 30+1; /* Wait up to 300ms */
+
+	spin_lock_irqsave(&hdcp.spinlock, flags);
+
+	if (!hdcp.auto_ri_check_disabled) {
+		hdcp_lib_auto_ri_check_locked(false);
+		++hdcp.auto_ri_check_disabled;
+		spin_unlock_irqrestore(&hdcp.spinlock, flags);
+
+                while (--TimeOut) {
+			if (!RD_FIELD_32(hdcp.hdmi_wp_base_addr +
+			                 HDMI_IP_CORE_SYSTEM,
+                                         HDMI_IP_CORE_SYSTEM__RI_STAT, 0, 0))
+				break;
+			msleep(10);
+		}
+
+                /* MDDC bus not relinquished */
+		if (!TimeOut) {
+			printk(KERN_ERR "HDCP: Suspending Auto Ri failed !\n");
+		}
+	} else {
+		++hdcp.auto_ri_check_disabled;
+		spin_unlock_irqrestore(&hdcp.spinlock, flags);
+	}
+}
+EXPORT_SYMBOL(hdcp_lib_auto_ri_check_disable_lock);
+
+/*-----------------------------------------------------------------------------
+ * Function: hdcp_lib_auto_ri_check_disable_unlock
+ *-----------------------------------------------------------------------------
+ */
+void hdcp_lib_auto_ri_check_disable_unlock(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&hdcp.spinlock, flags);
+
+	--hdcp.auto_ri_check_disabled;
+
+	if (!hdcp.auto_ri_check_disabled)
+		hdcp_lib_auto_ri_check_locked(hdcp.auto_ri_check_req);
+
+	spin_unlock_irqrestore(&hdcp.spinlock, flags);
+}
+EXPORT_SYMBOL(hdcp_lib_auto_ri_check_disable_unlock);
 
 /*-----------------------------------------------------------------------------
  * Function: hdcp_lib_auto_bcaps_rdy_check

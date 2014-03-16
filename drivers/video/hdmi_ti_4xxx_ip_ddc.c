@@ -29,6 +29,7 @@
 #include "hdmi_ti_4xxx_ip_ddc.h"
 #include "hdmi_ti_4xxx_ip.h"
 #include "omap2/dss/dss.h"
+#include "omap2/hdcp/hdcp.h"
 
 struct ddc ddc;
 
@@ -47,10 +48,7 @@ int ddc_start_transfer(mddc_type *mddc_cmd, u8 operation)
 	mutex_lock(&ddc.lock);
 
 #ifdef _9032_AUTO_RI_
-	if (hdcp_suspend_resume_auto_ri(AUTO_RI_SUSPEND)) {
-		mutex_unlock(&ddc.lock);
-		return -DDC_ERROR;
-	}
+	hdcp_lib_auto_ri_check_disable_lock();
 #endif
 
 	/*
@@ -173,10 +171,7 @@ int ddc_start_transfer(mddc_type *mddc_cmd, u8 operation)
 
 #ifdef _9032_AUTO_RI_
 	/* Re-enable Auto Ri */
-	if (hdcp_suspend_resume_auto_ri(AUTO_RI_RESUME)) {
-		mutex_unlock(&ddc.lock);
-		return -DDC_ERROR;
-	}
+	hdcp_lib_auto_ri_check_disable_unlock();
 #endif
 
 	mutex_unlock(&ddc.lock);
@@ -184,6 +179,10 @@ int ddc_start_transfer(mddc_type *mddc_cmd, u8 operation)
 
 ddc_error:
 	ddc_abort();
+#ifdef _9032_AUTO_RI_
+	/* Re-enable Auto Ri */
+	hdcp_lib_auto_ri_check_disable_unlock();
+#endif
 	mutex_unlock(&ddc.lock);
 	return -DDC_ERROR;
 
@@ -192,6 +191,10 @@ ddc_terminated:
 		RD_REG_32(ddc.hdmi_wp_base_addr + HDMI_IP_CORE_SYSTEM,
 			  HDMI_IP_CORE_SYSTEM__DDC_STATUS));
 
+#ifdef _9032_AUTO_RI_
+	/* Re-enable Auto Ri */
+	hdcp_lib_auto_ri_check_disable_unlock();
+#endif
 	mutex_unlock(&ddc.lock);
 	return DDC_OK;
 }
