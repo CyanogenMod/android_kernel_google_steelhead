@@ -669,7 +669,7 @@ static void steelhead_tas5713_after_power_down(
 {
 	if (NULL != pdata) {
 		int gpio_num = (int)(pdata->board_data);
-		gpio_set_value(gpio_num, 1);
+		gpio_set_value(gpio_num, 0);
 	}
 }
 
